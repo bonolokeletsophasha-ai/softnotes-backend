@@ -4,6 +4,7 @@ import {
   signup,
   login,
   logout,
+  getCurrentUser,
 } from "../controllers/authController.js";
 
 import authMiddleware from "../middleware/authMiddleware.js";
@@ -16,7 +17,10 @@ router.post("/signup", signup);
 // Login
 router.post("/login", login);
 
-// Logout (protected)
+// Get current logged-in user
+router.get("/me", authMiddleware, getCurrentUser);
+
+// Logout
 router.post("/logout", authMiddleware, logout);
 
 export default router;
