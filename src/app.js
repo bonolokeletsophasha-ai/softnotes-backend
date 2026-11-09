@@ -39,4 +39,4 @@ app.get("/api/protected", authMiddleware, (req, res) => {
   });
 });
 
-  export default app;
+  export default app; 

@@ -66,11 +66,10 @@ export const login = async (req, res) => {
       });
     }
 
-    const { data, error } =
-      await supabase.auth.signInWithPassword({
-        email,
-        password,
-      });
+    const { data, error } = await supabase.auth.signInWithPassword({
+      email,
+      password,
+    });
 
     if (error) {
       return res.status(401).json({
@@ -89,6 +88,14 @@ export const login = async (req, res) => {
       message: "Something went wrong during login.",
     });
   }
+};
+
+// Get the currently logged-in user
+export const getCurrentUser = (req, res) => {
+  res.status(200).json({
+    message: "Session is valid.",
+    user: req.user,
+  });
 };
 
 // Logout user
