@@ -1,6 +1,6 @@
 import { createAuthenticatedClient } from "../config/supabase.js";
 
-// Get all notes belonging to the logged-in user
+// Get all active notes
 export const getNotes = async (req, res) => {
   try {
     const supabase = createAuthenticatedClient(req.accessToken);
@@ -8,12 +8,11 @@ export const getNotes = async (req, res) => {
     const { data, error } = await supabase
       .from("notes")
       .select("*")
+      .eq("is_deleted", false)
       .order("updated_at", { ascending: false });
 
     if (error) {
-      return res.status(400).json({
-        message: error.message,
-      });
+      return res.status(400).json({ message: error.message });
     }
 
     res.status(200).json({
@@ -21,9 +20,31 @@ export const getNotes = async (req, res) => {
       notes: data,
     });
   } catch (error) {
-    res.status(500).json({
-      message: "Unable to retrieve notes.",
+    res.status(500).json({ message: "Unable to retrieve notes." });
+  }
+};
+
+// Get all deleted notes
+export const getDeletedNotes = async (req, res) => {
+  try {
+    const supabase = createAuthenticatedClient(req.accessToken);
+
+    const { data, error } = await supabase
+      .from("notes")
+      .select("*")
+      .eq("is_deleted", true)
+      .order("updated_at", { ascending: false });
+
+    if (error) {
+      return res.status(400).json({ message: error.message });
+    }
+
+    res.status(200).json({
+      message: "Deleted notes retrieved successfully.",
+      notes: data,
     });
+  } catch (error) {
+    res.status(500).json({ message: "Unable to retrieve deleted notes." });
   }
 };
 
@@ -48,15 +69,14 @@ export const createNote = async (req, res) => {
           title: title.trim(),
           content: content || "",
           is_favorite: false,
+          is_deleted: false,
         },
       ])
       .select()
       .single();
 
     if (error) {
-      return res.status(400).json({
-        message: error.message,
-      });
+      return res.status(400).json({ message: error.message });
     }
 
     res.status(201).json({
@@ -64,9 +84,7 @@ export const createNote = async (req, res) => {
       note: data,
     });
   } catch (error) {
-    res.status(500).json({
-      message: "Unable to create note.",
-    });
+    res.status(500).json({ message: "Unable to create note." });
   }
 };
 
@@ -87,19 +105,16 @@ export const updateNote = async (req, res) => {
       })
       .eq("id", id)
       .eq("user_id", req.user.id)
+      .eq("is_deleted", false)
       .select()
       .maybeSingle();
 
     if (error) {
-      return res.status(400).json({
-        message: error.message,
-      });
+      return res.status(400).json({ message: error.message });
     }
 
     if (!data) {
-      return res.status(404).json({
-        message: "Note not found.",
-      });
+      return res.status(404).json({ message: "Note not found." });
     }
 
     res.status(200).json({
@@ -107,9 +122,7 @@ export const updateNote = async (req, res) => {
       note: data,
     });
   } catch (error) {
-    res.status(500).json({
-      message: "Unable to update note.",
-    });
+    res.status(500).json({ message: "Unable to update note." });
   }
 };
 
@@ -135,19 +148,16 @@ export const toggleFavorite = async (req, res) => {
       })
       .eq("id", id)
       .eq("user_id", req.user.id)
+      .eq("is_deleted", false)
       .select()
       .maybeSingle();
 
     if (error) {
-      return res.status(400).json({
-        message: error.message,
-      });
+      return res.status(400).json({ message: error.message });
     }
 
     if (!data) {
-      return res.status(404).json({
-        message: "Note not found.",
-      });
+      return res.status(404).json({ message: "Note not found." });
     }
 
     res.status(200).json({
@@ -163,8 +173,80 @@ export const toggleFavorite = async (req, res) => {
   }
 };
 
-// Delete a note
-export const deleteNote = async (req, res) => {
+// Move a note to the Trash
+export const moveToTrash = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const supabase = createAuthenticatedClient(req.accessToken);
+
+    const { data, error } = await supabase
+      .from("notes")
+      .update({
+        is_deleted: true,
+        updated_at: new Date().toISOString(),
+      })
+      .eq("id", id)
+      .eq("user_id", req.user.id)
+      .eq("is_deleted", false)
+      .select()
+      .maybeSingle();
+
+    if (error) {
+      return res.status(400).json({ message: error.message });
+    }
+
+    if (!data) {
+      return res.status(404).json({ message: "Note not found." });
+    }
+
+    res.status(200).json({
+      message: "Note moved to Trash successfully.",
+      note: data,
+    });
+  } catch (error) {
+    res.status(500).json({ message: "Unable to move note to Trash." });
+  }
+};
+
+// Restore a note from the Trash
+export const restoreNote = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const supabase = createAuthenticatedClient(req.accessToken);
+
+    const { data, error } = await supabase
+      .from("notes")
+      .update({
+        is_deleted: false,
+        updated_at: new Date().toISOString(),
+      })
+      .eq("id", id)
+      .eq("user_id", req.user.id)
+      .eq("is_deleted", true)
+      .select()
+      .maybeSingle();
+
+    if (error) {
+      return res.status(400).json({ message: error.message });
+    }
+
+    if (!data) {
+      return res.status(404).json({ message: "Deleted note not found." });
+    }
+
+    res.status(200).json({
+      message: "Note restored successfully.",
+      note: data,
+    });
+  } catch (error) {
+    res.status(500).json({ message: "Unable to restore note." });
+  }
+};
+
+// Permanently delete a note
+export const permanentlyDeleteNote = async (req, res) => {
   try {
     const { id } = req.params;
 
@@ -175,27 +257,24 @@ export const deleteNote = async (req, res) => {
       .delete()
       .eq("id", id)
       .eq("user_id", req.user.id)
+      .eq("is_deleted", true)
       .select()
       .maybeSingle();
 
     if (error) {
-      return res.status(400).json({
-        message: error.message,
-      });
+      return res.status(400).json({ message: error.message });
     }
 
     if (!data) {
-      return res.status(404).json({
-        message: "Note not found.",
-      });
+      return res.status(404).json({ message: "Deleted note not found." });
     }
 
     res.status(200).json({
-      message: "Note deleted successfully.",
+      message: "Note permanently deleted.",
     });
   } catch (error) {
     res.status(500).json({
-      message: "Unable to delete note.",
+      message: "Unable to permanently delete note.",
     });
   }
 };
