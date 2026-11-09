@@ -2,10 +2,13 @@ import supabase from "../config/supabase.js";
 
 // Set authentication cookie
 const setAuthCookie = (res, token) => {
+  const isProduction = process.env.NODE_ENV === "production";
+
   res.cookie("access_token", token, {
     httpOnly: true,
-    secure: process.env.NODE_ENV === "production",
-    sameSite: "lax",
+    secure: isProduction,
+    sameSite: isProduction ? "none" : "lax",
+    path: "/",
     maxAge: 60 * 60 * 1000,
   });
 };
@@ -100,10 +103,12 @@ export const getCurrentUser = (req, res) => {
 
 // Logout user
 export const logout = (req, res) => {
+  const isProduction = process.env.NODE_ENV === "production";
+
   res.clearCookie("access_token", {
     httpOnly: true,
-    secure: process.env.NODE_ENV === "production",
-    sameSite: "lax",
+    secure: isProduction,
+    sameSite: isProduction ? "none" : "lax",
     path: "/",
   });
 
