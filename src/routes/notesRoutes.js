@@ -4,6 +4,7 @@ import {
   getNotes,
   createNote,
   updateNote,
+  toggleFavorite,
   deleteNote,
 } from "../controllers/notesController.js";
 
@@ -22,6 +23,9 @@ router.post("/", createNote);
 
 // Update a note
 router.put("/:id", updateNote);
+
+// Toggle favourite status
+router.patch("/:id/favorite", toggleFavorite);
 
 // Delete a note
 router.delete("/:id", deleteNote);

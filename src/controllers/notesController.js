@@ -47,6 +47,7 @@ export const createNote = async (req, res) => {
           user_id: req.user.id,
           title: title.trim(),
           content: content || "",
+          is_favorite: false,
         },
       ])
       .select()
@@ -108,6 +109,56 @@ export const updateNote = async (req, res) => {
   } catch (error) {
     res.status(500).json({
       message: "Unable to update note.",
+    });
+  }
+};
+
+// Toggle a note's favourite status
+export const toggleFavorite = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { is_favorite } = req.body;
+
+    if (typeof is_favorite !== "boolean") {
+      return res.status(400).json({
+        message: "A valid favourite status is required.",
+      });
+    }
+
+    const supabase = createAuthenticatedClient(req.accessToken);
+
+    const { data, error } = await supabase
+      .from("notes")
+      .update({
+        is_favorite,
+        updated_at: new Date().toISOString(),
+      })
+      .eq("id", id)
+      .eq("user_id", req.user.id)
+      .select()
+      .maybeSingle();
+
+    if (error) {
+      return res.status(400).json({
+        message: error.message,
+      });
+    }
+
+    if (!data) {
+      return res.status(404).json({
+        message: "Note not found.",
+      });
+    }
+
+    res.status(200).json({
+      message: is_favorite
+        ? "Note added to favourites."
+        : "Note removed from favourites.",
+      note: data,
+    });
+  } catch (error) {
+    res.status(500).json({
+      message: "Unable to update favourite status.",
     });
   }
 };
