@@ -3,6 +3,7 @@ import cors from "cors";
 import cookieParser from "cookie-parser";
 import authRoutes from "./routes/authRoutes.js";
 import authMiddleware from "./middleware/authMiddleware.js";
+import notesRoutes from "./routes/notesRoutes.js";
 
 const app = express();
 
@@ -26,6 +27,9 @@ app.get("/", (req, res) => {
 
 // Authentication routes
 app.use("/api/auth", authRoutes);
+
+//Notes routes
+app.use("/api/notes", notesRoutes);
 
 // Protected test route
 app.get("/api/protected", authMiddleware, (req, res) => {
