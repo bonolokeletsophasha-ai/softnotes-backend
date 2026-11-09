@@ -2,6 +2,7 @@ import express from "express";
 import cors from "cors";
 import cookieParser from "cookie-parser";
 import authRoutes from "./routes/authRoutes.js";
+import authMiddleware from "./middleware/authMiddleware.js";
 
 const app = express();
 
@@ -26,4 +27,12 @@ app.get("/", (req, res) => {
 // Authentication routes
 app.use("/api/auth", authRoutes);
 
-export default app;
+// Protected test route
+app.get("/api/protected", authMiddleware, (req, res) => {
+  res.status(200).json({
+    message: "Welcome! You have accessed a protected route.",
+    user: req.user.email,
+  });
+});
+
+  export default app;
